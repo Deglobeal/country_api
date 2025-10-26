@@ -13,4 +13,10 @@ class CountrySerializer(serializers.ModelSerializer):
 
 class StatusSerializer(serializers.Serializer):
     total_countries = serializers.IntegerField()
-    last_refreshed_at = serializers.DateTimeField()
+    last_refreshed_at = serializers.DateTimeField(required=False, allow_null=True)
+    
+    def create(self, validated_data):
+        pass
+    
+    def update(self, instance, validated_data):
+        pass

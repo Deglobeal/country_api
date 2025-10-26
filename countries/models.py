@@ -20,24 +20,29 @@ class Country(models.Model):
             errors['name'] = 'is required'
         if self.population is None:
             errors['population'] = 'is required'
-        if not self.currency_code:
-            errors['currency_code'] = 'is required'
+        if self.population and self.population < 0:
+            errors['population'] = 'must be non-negative'
             
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        # Always call full clean for validation
         self.full_clean()
         
         # Calculate estimated_gdp if we have the required data
+        self.calculate_gdp()
+            
+        super().save(*args, **kwargs)
+
+    def calculate_gdp(self):
+        """Calculate estimated GDP based on current data"""
         if (self.population and self.exchange_rate and 
             self.exchange_rate > 0 and self.currency_code):
             random_multiplier = random.uniform(1000, 2000)
-            self.estimated_gdp = (self.population * random_multiplier) / self.exchange_rate
+            self.estimated_gdp = round((self.population * random_multiplier) / self.exchange_rate, 2)
         else:
             self.estimated_gdp = None
-            
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
