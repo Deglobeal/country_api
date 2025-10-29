@@ -26,10 +26,6 @@ urlpatterns = [
     
     # Admin
     path('admin/', admin.site.urls),
+    path('', include('countries.urls')),
     
-    # Countries API endpoints
-    path('countries/', include('countries.urls')),
-    
-    # Redirect any other unknown paths to API root
-    path('<path:unknown>', lambda request: JsonResponse({"error": "Endpoint not found"}, status=404)),
 ]

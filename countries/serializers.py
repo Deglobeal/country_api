@@ -20,3 +20,7 @@ class StatusSerializer(serializers.Serializer):
     
     def update(self, instance, validated_data):
         pass
+
+class ErrorSerializer(serializers.Serializer):
+    error = serializers.CharField()
+    details = serializers.DictField(required=False)

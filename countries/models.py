@@ -1,52 +1,38 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-import random
 
 class Country(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    capital = models.CharField(max_length=100, blank=True, null=True)
-    region = models.CharField(max_length=50, blank=True, null=True)
+    capital = models.CharField(max_length=100, null=True, blank=True)
+    region = models.CharField(max_length=50, null=True, blank=True)
     population = models.BigIntegerField()
-    currency_code = models.CharField(max_length=10, blank=True, null=True)
-    exchange_rate = models.FloatField(null=True, blank=True)
-    estimated_gdp = models.FloatField(null=True, blank=True)
-    flag_url = models.URLField(blank=True, null=True)
+    currency_code = models.CharField(max_length=10, null=True, blank=True)
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
+    estimated_gdp = models.DecimalField(max_digits=30, decimal_places=2, null=True, blank=True)
+    flag_url = models.URLField(max_length=500, null=True, blank=True)
     last_refreshed_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        errors = {}
-        
-        if not self.name:
-            errors['name'] = 'is required'
-        if self.population is None:
-            errors['population'] = 'is required'
-        if self.population and self.population < 0:
-            errors['population'] = 'must be non-negative'
-            
-        if errors:
-            raise ValidationError(errors)
-
-    def save(self, *args, **kwargs):
-        # Always call full clean for validation
-        self.full_clean()
-        
-        # Calculate estimated_gdp if we have the required data
-        self.calculate_gdp()
-            
-        super().save(*args, **kwargs)
-
-    def calculate_gdp(self):
-        """Calculate estimated GDP based on current data"""
-        if (self.population and self.exchange_rate and 
-            self.exchange_rate > 0 and self.currency_code):
-            random_multiplier = random.uniform(1000, 2000)
-            self.estimated_gdp = round((self.population * random_multiplier) / self.exchange_rate, 2)
-        else:
-            self.estimated_gdp = None
-
-    def __str__(self):
-        return self.name
-
+    
     class Meta:
         db_table = 'countries'
         ordering = ['name']
+    
+    def clean(self):
+        errors = {}
+        
+        # Required fields validation
+        if not self.name:
+            errors['name'] = 'is required'
+        if not self.population:
+            errors['population'] = 'is required'
+        if self.population and self.population < 0:
+            errors['population'] = 'must be non-negative'
+        
+        if errors:
+            raise ValidationError(errors)
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return self.name
