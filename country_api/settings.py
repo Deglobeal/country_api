@@ -21,7 +21,7 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -99,8 +99,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '24983'),
         'OPTIONS': {
             'ssl': {
-                'ssl_mode': 'REQUIRED',
-                'ca': os.path.join(BASE_DIR, 'ca.pem'),
+                'ca': os.path.join(BASE_DIR, os.getenv('DB_CA_CERT_PATH', 'ca.pem')),
             }
         },
     }
