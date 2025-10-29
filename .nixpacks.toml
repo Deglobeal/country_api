@@ -1,0 +1,23 @@
+[phases.setup]
+packages = ["python311"]
+
+[phases.install]
+commands = [
+    "python -m venv --copies /opt/venv",
+    ". /opt/venv/bin/activate",
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt"
+]
+
+[phases.build]
+commands = [
+    ". /opt/venv/bin/activate",
+    "python manage.py migrate",
+    "python manage.py collectstatic --noinput"
+]
+
+[phases.start]
+commands = [
+    ". /opt/venv/bin/activate",
+    "gunicorn country_api.wsgi:application --bind 0.0.0.0:$PORT"
+]

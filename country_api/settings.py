@@ -186,3 +186,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # country_api/test_db.py
 #     contains tests for various API endpoints of the country_api Django application.
+
+
+import pymysql
+pymysql.install_as_MySQLdb()
