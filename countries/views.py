@@ -94,19 +94,20 @@ def list_countries(request):
     serializer = CountrySerializer(queryset, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
-def get_country(request, name):
-    """GET /countries/:name - Get country by name"""
-    country = get_object_or_404(Country, name__iexact=name)
-    serializer = CountrySerializer(country)
-    return Response(serializer.data)
 
-@api_view(['DELETE'])
-def delete_country(request, name):
-    """DELETE /countries/:name - Delete country by name"""
+@api_view(['GET', 'DELETE'])
+def country_detail(request, name):
+    """Handle both GET and DELETE for specific country"""
     country = get_object_or_404(Country, name__iexact=name)
-    country.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    if request.method == 'GET':
+        serializer = CountrySerializer(country)
+        return Response(serializer.data)
+    
+    elif request.method == 'DELETE':
+        country.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @api_view(['GET'])
 def get_status(request):

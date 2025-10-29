@@ -3,6 +3,9 @@ import os
 from django.conf import settings
 from .models import Country
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SummaryImageGenerator:
     @staticmethod
@@ -14,11 +17,11 @@ class SummaryImageGenerator:
             image = Image.new('RGB', (width, height), color='white')
             draw = ImageDraw.Draw(image)
             
-            # Try to use a default font (this might need adjustment based on deployment environment)
+            # Try to use a default font
             try:
                 font_large = ImageFont.truetype("arial.ttf", 24)
                 font_medium = ImageFont.truetype("arial.ttf", 18)
-                font_small = ImageFont.trueType("arial.ttf", 14) # type: ignore
+                font_small = ImageFont.truetype("arial.ttf", 14)  # FIXED: was "trueType" (capital T)
             except:
                 # Fallback to default font
                 font_large = ImageFont.load_default()
@@ -61,10 +64,12 @@ class SummaryImageGenerator:
                 y_position += 25
             
             # Save image
+            os.makedirs(settings.CACHE_DIR, exist_ok=True)
             image_path = os.path.join(settings.CACHE_DIR, 'summary.png')
             image.save(image_path)
+            logger.info(f"Summary image generated at {image_path}")
             return image_path
             
         except Exception as e:
-            print(f"Error generating image: {e}")
+            logger.error(f"Error generating image: {e}")
             return None
