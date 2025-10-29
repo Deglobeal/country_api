@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import pymysql
+pymysql.install_as_MySQLdb()
+
 
 
 load_dotenv()
@@ -188,5 +191,3 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 #     contains tests for various API endpoints of the country_api Django application.
 
 
-import pymysql
-pymysql.install_as_MySQLdb()
