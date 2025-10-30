@@ -54,6 +54,7 @@ class CountryListView(APIView):
         
         serializer = CountrySerializer(queryset, many=True)
         return Response(serializer.data)
+    
 class CountryDetailView(APIView):
     def get_object(self, name):
         try:
@@ -70,6 +71,13 @@ class CountryDetailView(APIView):
         except Http404:
             return Response({"error": "Country not found"}, status=status.HTTP_404_NOT_FOUND)
     
+class CountryDeleteView(APIView):
+    def get_object(self, name):
+        try:
+            return Country.objects.get(name__iexact=name)
+        except Country.DoesNotExist:
+            raise Http404
+
     def delete(self, request, name):
         try:
             country = self.get_object(name)
@@ -77,7 +85,8 @@ class CountryDetailView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Http404:
             return Response({"error": "Country not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        except Exception as e:
+            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 def refresh_countries(request):
@@ -118,6 +127,7 @@ def status_view(request):
     })
 
 
+
 @api_view(['GET'])
 def countries_image(request):
     """Serve the generated summary image"""
@@ -142,7 +152,33 @@ def countries_image(request):
             {'error': 'Failed to generate or serve image'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
+    
+    
+@api_view(['GET'])     
+def get_country_images(request):
+    try:
+        image_path = os.path.join(settings.CACHE_DIR, 'summary.png')
+        
+        if not os.path.exists(image_path):
+            # Generate image if it doesn't exist
+            print("Image not found, generating...")
+            generate_summary_image()
+        
+        if os.path.exists(image_path):
+            return FileResponse(open(image_path, 'rb'), content_type='image/png')
+        else:
+            return Response(
+                {'error': 'Summary image not available'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    except Exception as e:
+        print(f"Error serving image: {e}")
+        return Response(
+            {'error': 'Failed to generate or serve image'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+@api_view(['GET'])
+def get_country_image(request):
 
     """Serve the generated summary image"""
     image_path = os.path.join(settings.CACHE_DIR, 'summary.png')

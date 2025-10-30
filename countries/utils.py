@@ -58,6 +58,8 @@ def calculate_estimated_gdp(population, exchange_rate):
     except (TypeError, ValueError, ZeroDivisionError):
         return None
 
+
+
 def refresh_countries_data():
     """Main function to refresh countries data"""
     from .models import Country
@@ -140,6 +142,8 @@ def refresh_countries_data():
 
 
 
+
+
 def generate_summary_image():
     """Generate summary image with countries data"""
     from .models import Country
@@ -216,6 +220,8 @@ def generate_summary_image():
             return error_path
         except:
             return None
+
+
 
 
 
