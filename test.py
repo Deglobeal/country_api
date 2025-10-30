@@ -1,47 +1,58 @@
+import os
+import django
 import requests
 
-BASE_URL = "http://localhost:8000"
+# Setup Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'country_api.settings')
+django.setup()
 
-# Quick test function
-def quick_test(endpoint, method='GET', data=None):
-    url = f"{BASE_URL}{endpoint}"
-    try:
-        if method == 'GET':
-            response = requests.get(url)
-        elif method == 'POST':
-            response = requests.post(url, json=data)
-        elif method == 'DELETE':
-            response = requests.delete(url)
-        
-        print(f"{method} {endpoint}")
-        print(f"Status: {response.status_code}")
-        
-        if response.status_code != 200:
-            print(f"Response: {response.text}")
-        else:
-            data = response.json()
-            if endpoint == '/countries':
-                print(f"Count: {len(data)} countries")
-            elif endpoint == '/status':
-                print(f"Total countries: {data.get('total_countries')}")
-        
-        print("-" * 50)
-        return response
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+from countries.models import Country
 
-# Run quick tests
-if __name__ == "__main__":
-    print("QUICK API TESTS")
-    print("=" * 50)
+BASE_URL = "http://localhost:8000/countries"
+
+def debug_refresh():
+    print("Testing refresh endpoint...")
+    response = requests.post(f"{BASE_URL}/refresh")
+    print(f"Status: {response.status_code}")
+    if response.status_code != 200:
+        print(f"Error: {response.text}")
+    else:
+        print(f"Success: {response.json()}")
+
+def debug_countries():
+    print("\nTesting countries list...")
+    response = requests.get(f"{BASE_URL}/")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        countries = response.json()
+        print(f"Found {len(countries)} countries")
+        if countries:
+            print("First country:", countries[0]['name'])
+    else:
+        print(f"Error: {response.text}")
+
+def debug_specific_country():
+    print("\nTesting specific country...")
+    # Try a few different country names
+    test_countries = ["United States", "United States of America", "Albania", "France"]
     
-    quick_test("/countries/refresh", "POST")
-    quick_test("/countries")
-    quick_test("/countries?region=Africa")
-    quick_test("/countries?sort=gdp_desc")
-    quick_test("/countries/Nigeria")
-    quick_test("/countries/NonExistentCountry")
-    quick_test("/status")
-    quick_test("/countries/image")
+    for country_name in test_countries:
+        response = requests.get(f"{BASE_URL}/{country_name}")
+        print(f"{country_name}: Status {response.status_code}")
+        if response.status_code == 200:
+            print(f"Found: {response.json()['name']}")
+            break
+
+def debug_database():
+    print("\nChecking database directly...")
+    count = Country.objects.count()
+    print(f"Total countries in database: {count}")
+    if count > 0:
+        first_country = Country.objects.first()
+        print(f"First country: {first_country.name}")
+
+if __name__ == "__main__":
+    debug_refresh()
+    debug_countries()
+    debug_specific_country()
+    debug_database()

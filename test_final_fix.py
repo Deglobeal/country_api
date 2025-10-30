@@ -5,14 +5,14 @@ from datetime import datetime
 from PIL import Image
 from io import BytesIO
 
-BASE_URL = "http://localhost:8000/countries"  # Update with your actual base URL
+BASE_URL = "http://localhost:8000/countries"
 
 class CountryAPITestCase(unittest.TestCase):
     
     def setUp(self):
         # Refresh countries before each test
         try:
-            response = requests.post(f"{BASE_URL}/refresh", timeout=30)
+            response = requests.post(f"{BASE_URL}/refresh/", timeout=30)
             self.refresh_response = response
         except requests.exceptions.RequestException as e:
             self.refresh_response = None
@@ -73,8 +73,8 @@ class CountryAPITestCase(unittest.TestCase):
     
     # TEST 3: GET /countries/:name
     def test_get_country_by_name(self):
-        # Get existing country
-        response = requests.get(f"{BASE_URL}/United States")
+        # Get existing country - USE THE CORRECT NAME
+        response = requests.get(f"{BASE_URL}/United States of America/")
         self.assertEqual(response.status_code, 200, "Should return 200 OK for existing country")
         
         # Check response structure
@@ -86,7 +86,7 @@ class CountryAPITestCase(unittest.TestCase):
         self.assertEqual(len(missing_fields), 0, f"Missing fields: {missing_fields}")
         
         # Get non-existent country
-        response = requests.get(f"{BASE_URL}/NonExistentCountry")
+        response = requests.get(f"{BASE_URL}/NonExistentCountry/")
         self.assertEqual(response.status_code, 404, "Should return 404 for non-existent country")
         data = response.json()
         self.assertIn("error", data, "Response should contain error message")
@@ -94,24 +94,26 @@ class CountryAPITestCase(unittest.TestCase):
     
     # TEST 4: DELETE /countries/:name
     def test_delete_country(self):
+        # Use a different country for deletion test to avoid conflicts
+        country_name = "Albania"
+        
         # First, ensure the country exists
-        country_name = "United States"
-        response = requests.get(f"{BASE_URL}/{country_name}")
+        response = requests.get(f"{BASE_URL}/{country_name}/")
         self.assertEqual(response.status_code, 200, f"{country_name} should exist before deletion")
         
         # Delete the country
-        delete_response = requests.delete(f"{BASE_URL}/{country_name}")
+        delete_response = requests.delete(f"{BASE_URL}/{country_name}/")
         self.assertEqual(delete_response.status_code, 204, "DELETE should return 204 No Content")
         
         # Verify deletion
-        response = requests.get(f"{BASE_URL}/{country_name}")
+        response = requests.get(f"{BASE_URL}/{country_name}/")
         self.assertEqual(response.status_code, 404, "Should return 404 after deletion")
         data = response.json()
         self.assertIn("error", data, "Response should contain error message")
         self.assertEqual(data["error"], "Country not found", "Error message should be 'Country not found'")
         
         # Try to delete non-existent country
-        response = requests.delete(f"{BASE_URL}/NonExistentCountry")
+        response = requests.delete(f"{BASE_URL}/NonExistentCountry/")
         self.assertEqual(response.status_code, 404, "Should return 404 for non-existent country")
         data = response.json()
         self.assertIn("error", data, "Response should contain error message")
@@ -119,7 +121,7 @@ class CountryAPITestCase(unittest.TestCase):
     
     # TEST 5: GET /status
     def test_status_endpoint(self):
-        response = requests.get(f"{BASE_URL}/status")
+        response = requests.get(f"{BASE_URL}/status/")
         self.assertEqual(response.status_code, 200, "Status endpoint should return 200 OK")
         
         data = response.json()
@@ -135,11 +137,11 @@ class CountryAPITestCase(unittest.TestCase):
     # TEST 6: GET /countries/image
     def test_countries_image(self):
         # Generate image by refreshing countries
-        response = requests.post(f"{BASE_URL}/refresh")
+        response = requests.post(f"{BASE_URL}/refresh/")
         self.assertEqual(response.status_code, 200, "Refresh should succeed to generate image")
         
         # Get image
-        response = requests.get(f"{BASE_URL}/image")
+        response = requests.get(f"{BASE_URL}/image/")
         self.assertEqual(response.status_code, 200, "Image endpoint should return 200 OK")
         
         # Verify it's an image
@@ -161,9 +163,6 @@ class CountryAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400, "Should return 400 for invalid parameters")
         data = response.json()
         self.assertIn("error", data, "Response should contain error message")
-        
-        # Test 500 error
-        # This would require intentionally breaking something, so we'll skip for now
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,48 +1,73 @@
+# test_fixes.py
 import requests
-import sys
+import json
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://your-railway-app.railway.app"  # Replace with your actual URL
 
-def test_endpoint(method, endpoint, expected_codes, description):
-    print(f"\nTesting: {description}")
-    print(f"Endpoint: {method} {endpoint}")
+def test_delete_method():
+    print("Testing DELETE method...")
     
+    # Test 1: Delete non-existent country (should return 404)
     try:
-        if method == 'GET':
-            response = requests.get(f"{BASE_URL}{endpoint}")
-        elif method == 'POST':
-            response = requests.post(f"{BASE_URL}{endpoint}")
-        elif method == 'DELETE':
-            response = requests.delete(f"{BASE_URL}{endpoint}")
-        
-        if response.status_code in expected_codes:
-            print(f"✓ PASS - Status: {response.status_code}")
-            if response.status_code != 200 and response.status_code != 204:
-                print(f"Response: {response.text}")
-            return True
+        response = requests.delete(f"{BASE_URL}/countries/NonExistentCountry123")
+        print(f"DELETE non-existent: Status {response.status_code}")
+        if response.status_code == 404:
+            data = response.json()
+            if data.get('error') == 'Country not found':
+                print("✓ DELETE returns correct 404 for non-existent country")
+            else:
+                print(f"✗ Wrong error message: {data}")
         else:
-            print(f"✗ FAIL - Status: {response.status_code} (Expected: {expected_codes})")
-            print(f"Response: {response.text}")
-            return False
-            
+            print(f"✗ Expected 404, got {response.status_code}")
     except Exception as e:
-        print(f"✗ ERROR - {e}")
-        return False
+        print(f"✗ DELETE test failed: {e}")
+    
+    # Test 2: Delete an actual country (first refresh to ensure data exists)
+    try:
+        # First refresh to get data
+        refresh = requests.post(f"{BASE_URL}/countries/refresh")
+        if refresh.status_code == 200:
+            # Try to delete a real country
+            response = requests.delete(f"{BASE_URL}/countries/Nigeria")
+            print(f"DELETE real country: Status {response.status_code}")
+            if response.status_code == 204:
+                print("✓ DELETE returns 204 for successful deletion")
+            else:
+                print(f"✗ Expected 204, got {response.status_code}")
+        else:
+            print("✗ Could not refresh data for DELETE test")
+    except Exception as e:
+        print(f"✗ DELETE test failed: {e}")
 
-print("Testing Country API Fixes")
-print("=" * 50)
+def test_error_handling():
+    print("\nTesting Error Handling...")
+    
+    # Test 404 error format
+    try:
+        response = requests.get(f"{BASE_URL}/countries/InvalidCountryName123")
+        print(f"404 test: Status {response.status_code}")
+        if response.status_code == 404:
+            data = response.json()
+            if 'error' in data:
+                print("✓ 404 returns proper JSON error format")
+            else:
+                print(f"✗ 404 missing error field: {data}")
+        else:
+            print(f"✗ Expected 404, got {response.status_code}")
+    except Exception as e:
+        print(f"✗ 404 test failed: {e}")
+    
+    # Test invalid endpoint
+    try:
+        response = requests.get(f"{BASE_URL}/invalid-endpoint")
+        data = response.json()
+        if 'error' in data:
+            print("✓ Invalid endpoint returns JSON error")
+        else:
+            print(f"✗ Invalid endpoint wrong format: {data}")
+    except Exception as e:
+        print(f"✗ Invalid endpoint test failed: {e}")
 
-# Test DELETE with combined endpoint
-test_endpoint('DELETE', '/countries/Afghanistan', [204, 404], "DELETE country")
-
-# Test GET with same endpoint
-test_endpoint('GET', '/countries/Afghanistan', [200, 404], "GET country")
-
-# Test image endpoint (might still be 404 if no image generated)
-test_endpoint('GET', '/countries/image', [200, 404], "Get countries image")
-
-# Test refresh with improved error handling
-test_endpoint('POST', '/countries/refresh', [200, 503], "Refresh countries")
-
-print("\n" + "=" * 50)
-print("Testing complete!")
+if __name__ == "__main__":
+    test_delete_method()
+    test_error_handling()

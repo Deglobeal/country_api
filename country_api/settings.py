@@ -20,7 +20,8 @@ pymysql.install_as_MySQLdb()
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 
@@ -32,7 +33,7 @@ CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 SECRET_KEY = os.getenv('SECRET_KEY','django-insecure-7ii+o3-j7f(fglyn%z5qfa%p!!m@6oh94j3cdn@4xq_j)j+v*a')
  
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = 'FALSE' not in os.environ
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'countries',
     'corsheaders',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +67,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'countries.middleware.JSONErrorMiddleware',
 ]
 
 ROOT_URLCONF = 'country_api.urls'
@@ -170,6 +174,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
     'EXCEPTION_HANDLER': 'countries.utils.custom_exception_handler',
 }
 
@@ -194,3 +201,5 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 #     contains tests for various API endpoints of the country_api Django application.
 
 
+# disable slash 
+APPEND_SLASH = False

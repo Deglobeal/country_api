@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import handler404, handler500, handler400
+from countries.views import status_view
 from django.http import JsonResponse
-from django.views.generic import RedirectView
 
-# Simple API root view
+
 def api_root(request):
     return JsonResponse({
         "message": "Country Currency & Exchange API",
@@ -20,12 +21,12 @@ def api_root(request):
         "documentation": "Check README for usage instructions"
     })
 
+
+# Custom error handlers
+# Custom error handlers (these will work with the middleware)
+
 urlpatterns = [
-    # Root endpoint
-    path('', api_root, name='api-root'),
-    
-    # Admin
     path('admin/', admin.site.urls),
-    path('', include('countries.urls')),
-    
-]
+    path('countries/', include('countries.urls')),
+    path('status/', status_view, name='status'),
+] 
