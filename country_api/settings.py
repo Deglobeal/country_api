@@ -203,3 +203,11 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # disable slash 
 APPEND_SLASH = False
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': CACHE_DIR,
+    }
+}

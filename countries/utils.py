@@ -76,6 +76,10 @@ def refresh_countries_data():
         updated_count = 0
         error_count = 0
         
+        # Clear existing data to avoid duplicates
+        Country.objects.all().delete()
+        print("Cleared existing countries data")
+        
         for country_data in countries_data:
             try:
                 # Extract currency code (first one if multiple)
@@ -95,24 +99,18 @@ def refresh_countries_data():
                     exchange_rate
                 )
                 
-                # Update or create country record
-                obj, created = Country.objects.update_or_create(
+                # Create country record
+                Country.objects.create(
                     name=country_data['name'],
-                    defaults={
-                        'capital': country_data.get('capital'),
-                        'region': country_data.get('region'),
-                        'population': int(country_data.get('population', 0)),
-                        'currency_code': currency_code,
-                        'exchange_rate': exchange_rate,
-                        'estimated_gdp': estimated_gdp,
-                        'flag_url': country_data.get('flag'),
-                    }
+                    capital=country_data.get('capital'),
+                    region=country_data.get('region'),
+                    population=int(country_data.get('population', 0)),
+                    currency_code=currency_code,
+                    exchange_rate=exchange_rate,
+                    estimated_gdp=estimated_gdp,
+                    flag_url=country_data.get('flag'),
                 )
-                
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                created_count += 1
                     
             except Exception as e:
                 print(f"Error processing country {country_data.get('name')}: {e}")
@@ -124,20 +122,23 @@ def refresh_countries_data():
         
         # Generate summary image
         print("Generating summary image...")
-        generate_summary_image()
-        print("Summary image generated")
+        try:
+            generate_summary_image()
+            print("Summary image generated")
+        except Exception as e:
+            print(f"Error generating image: {e}")
         
         return {
-            'message': f'Successfully refreshed countries data. Created: {created_count}, Updated: {updated_count}, Errors: {error_count}',
-            'total_countries': Country.objects.count(),
-            'created': created_count,
-            'updated': updated_count,
+            'message': f'Successfully refreshed {created_count} countries',
+            'total_countries': created_count,
             'errors': error_count
         }
         
     except Exception as e:
         print(f"Error in refresh_countries_data: {e}")
         raise e
+
+
 
 def generate_summary_image():
     """Generate summary image with countries data"""
@@ -149,36 +150,50 @@ def generate_summary_image():
                                      .order_by('-estimated_gdp')[:5]
         
         # Create image
-        img_width = 600
-        img_height = 400
+        img_width = 800
+        img_height = 600
         image = Image.new('RGB', (img_width, img_height), color='white')
         draw = ImageDraw.Draw(image)
         
-        # Try to use a default font
+        # Use default font
         try:
-            font = ImageFont.truetype("arial.ttf", 20)
+            font_large = ImageFont.truetype("arial.ttf", 24)
+            font_medium = ImageFont.truetype("arial.ttf", 18)
             font_small = ImageFont.truetype("arial.ttf", 14)
         except:
-            # Use default font if arial is not available
-            font = ImageFont.load_default()
+            font_large = ImageFont.load_default()
+            font_medium = ImageFont.load_default()
             font_small = ImageFont.load_default()
         
         # Draw content
-        y_position = 20
-        draw.text((20, y_position), f"Total Countries: {Country.objects.count()}", fill='black', font=font)
+        y_position = 30
+        
+        # Title
+        draw.text((img_width//2 - 100, y_position), "Countries Summary", fill='black', font=font_large)
+        y_position += 50
+        
+        # Total countries
+        total_countries = Country.objects.count()
+        draw.text((50, y_position), f"Total Countries: {total_countries}", fill='black', font=font_medium)
         y_position += 40
-        draw.text((20, y_position), "Top 5 Countries by GDP:", fill='black', font=font)
-        y_position += 30
+        
+        # Top countries by GDP
+        draw.text((50, y_position), "Top 5 Countries by GDP:", fill='black', font=font_medium)
+        y_position += 40
         
         for i, country in enumerate(top_countries, 1):
-            gdp_str = f"{country.estimated_gdp:,.2f}" if country.estimated_gdp else "N/A"
-            text = f"{i}. {country.name}: ${gdp_str}"
-            draw.text((40, y_position), text, fill='black', font=font_small)
-            y_position += 25
+            gdp_str = f"${country.estimated_gdp:,.2f}" if country.estimated_gdp else "N/A"
+            text = f"{i}. {country.name}: {gdp_str}"
+            draw.text((70, y_position), text, fill='black', font=font_small)
+            y_position += 30
         
-        y_position += 20
-        refresh_time = timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-        draw.text((20, y_position), f"Last Refresh: {refresh_time}", fill='black', font=font_small)
+        y_position += 30
+        
+        # Last refresh time
+        latest_country = Country.objects.order_by('-last_refreshed_at').first()
+        if latest_country:
+            refresh_time = latest_country.last_refreshed_at.strftime("%Y-%m-%d %H:%M:%S UTC")
+            draw.text((50, y_position), f"Last Refresh: {refresh_time}", fill='black', font=font_small)
         
         # Ensure cache directory exists
         os.makedirs(settings.CACHE_DIR, exist_ok=True)
@@ -186,11 +201,23 @@ def generate_summary_image():
         # Save image
         image_path = os.path.join(settings.CACHE_DIR, 'summary.png')
         image.save(image_path)
+        print(f"Image saved to: {image_path}")
         
         return image_path
     except Exception as e:
         print(f"Error generating image: {e}")
-        return None
+        # Create a simple error image
+        try:
+            img = Image.new('RGB', (400, 200), color='red')
+            draw = ImageDraw.Draw(img)
+            draw.text((50, 80), "Error generating summary", fill='white')
+            error_path = os.path.join(settings.CACHE_DIR, 'summary.png')
+            img.save(error_path)
+            return error_path
+        except:
+            return None
+
+
 
 def custom_exception_handler(exc, context):
     """Custom exception handler for consistent error responses"""

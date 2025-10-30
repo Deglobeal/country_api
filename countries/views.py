@@ -117,8 +117,33 @@ def status_view(request):
         'last_refreshed_at': last_refreshed_at
     })
 
+
 @api_view(['GET'])
 def countries_image(request):
+    """Serve the generated summary image"""
+    try:
+        image_path = os.path.join(settings.CACHE_DIR, 'summary.png')
+        
+        if not os.path.exists(image_path):
+            # Generate image if it doesn't exist
+            print("Image not found, generating...")
+            generate_summary_image()
+        
+        if os.path.exists(image_path):
+            return FileResponse(open(image_path, 'rb'), content_type='image/png')
+        else:
+            return Response(
+                {'error': 'Summary image not available'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    except Exception as e:
+        print(f"Error serving image: {e}")
+        return Response(
+            {'error': 'Failed to generate or serve image'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
     """Serve the generated summary image"""
     image_path = os.path.join(settings.CACHE_DIR, 'summary.png')
     
