@@ -8,73 +8,57 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ExternalAPIService:
+    """Handles fetching of country and exchange rate data from external APIs."""
+
     @staticmethod
     def fetch_countries_data() -> List[Dict]:
-        """Fetch country data from restcountries API"""
-        try:
-            # Try multiple endpoints in case one fails
-            endpoints = [
-                'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies',
-                'https://restcountries.com/v3.1/all?fields=name,capital,region,population,flags,currencies'
-            ]
-            
-            for endpoint in endpoints:
-                try:
-                    logger.info(f"Trying endpoint: {endpoint}")
-                    response = requests.get(endpoint, timeout=30)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if isinstance(data, list) and len(data) > 0:
-                        logger.info(f"Successfully fetched {len(data)} countries from {endpoint}")
-                        return data
-                except Exception as e:
-                    logger.warning(f"Endpoint {endpoint} failed: {e}")
-                    continue
-            
-            raise Exception("All country API endpoints failed")
-            
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Could not fetch data from Countries API: {str(e)}")
+        """Fetch country data from multiple fallback APIs."""
+        endpoints = [
+            "https://restcountries.com/v3.1/all?fields=name,capital,region,population,flags,currencies",
+            "https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies",
+        ]
+        for endpoint in endpoints:
+            try:
+                logger.info(f"Fetching countries from {endpoint}")
+                response = requests.get(endpoint, timeout=15)
+                response.raise_for_status()
+                data = response.json()
+
+                if isinstance(data, list) and len(data) > 0:
+                    logger.info(f"✅ Fetched {len(data)} countries successfully.")
+                    return data
+            except Exception as e:
+                logger.warning(f"⚠️ Failed endpoint {endpoint}: {e}")
+                continue
+
+        raise Exception("All country API endpoints failed")
 
     @staticmethod
     def fetch_exchange_rates() -> Dict:
-        """Fetch exchange rates from er-api with fallback"""
-        try:
-            endpoints = [
-                'https://open.er-api.com/v6/latest/USD',
-                'https://api.exchangerate-api.com/v4/latest/USD'
-            ]
-            
-            for endpoint in endpoints:
-                try:
-                    logger.info(f"Trying exchange endpoint: {endpoint}")
-                    response = requests.get(endpoint, timeout=30)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if data.get('result') == 'success' or 'rates' in data:
-                        rates = data.get('rates', {})
-                        logger.info(f"Successfully fetched {len(rates)} exchange rates from {endpoint}")
-                        return rates
-                except Exception as e:
-                    logger.warning(f"Exchange endpoint {endpoint} failed: {e}")
-                    continue
-            
-            # If all APIs fail, return some basic rates as fallback
-            logger.warning("All exchange APIs failed, using fallback rates")
-            return {
-                'USD': 1.0,
-                'EUR': 0.85,
-                'GBP': 0.75,
-                'NGN': 1600.0,
-                'GHS': 15.0
-            }
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"All exchange rate APIs failed: {e}")
-            return {'USD': 1.0}  # Minimal fallback
+        """Fetch exchange rates with fallback defaults."""
+        endpoints = [
+            "https://api.exchangerate-api.com/v4/latest/USD",
+            "https://open.er-api.com/v6/latest/USD",
+        ]
+        for endpoint in endpoints:
+            try:
+                logger.info(f"Fetching exchange rates from {endpoint}")
+                response = requests.get(endpoint, timeout=15)
+                response.raise_for_status()
+                data = response.json()
+                if "rates" in data:
+                    logger.info("✅ Successfully fetched exchange rates")
+                    return data["rates"]
+            except Exception as e:
+                logger.warning(f"⚠️ Failed exchange endpoint {endpoint}: {e}")
+                continue
 
+        # Fallback rates if all endpoints fail
+        logger.warning("Using fallback exchange rates")
+        return {
+            "USD": 1.0, "EUR": 0.93, "GBP": 0.80, "NGN": 1600.0,
+            "GHS": 15.0, "JPY": 150.0, "CAD": 1.35, "AUD": 1.55
+        }
 class CountryDataProcessor:
     @staticmethod
     def extract_currency_code(currencies: List[Dict]) -> Optional[str]:
@@ -138,3 +122,13 @@ class CountryDataProcessor:
             'estimated_gdp': estimated_gdp,
             'flag_url': flag_url
         }
+
+
+
+    
+    
+
+    
+    
+
+   

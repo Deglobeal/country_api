@@ -22,6 +22,8 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
+CACHE_DIR = os.path.join(BASE_DIR, 'cache')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -35,6 +37,7 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    'testserver',
     "countryapi-production-ae84.up.railway.app",
     os.getenv("RAILWAY_STATIC_URL", ""),
 ]
